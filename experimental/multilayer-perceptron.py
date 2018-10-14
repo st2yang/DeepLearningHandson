@@ -1,3 +1,10 @@
+# the techniques used in the MLP:
+# architecture: input layer-hidden layer1(300 units)-hidden layer1(100 units)-output layer
+# weights initialization: truncated_normal
+# activation: relu
+# optimization: AdamOptimizer
+# accuracy: 0.9716
+
 import tensorflow as tf
 import numpy as np
 

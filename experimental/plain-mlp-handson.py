@@ -1,4 +1,10 @@
 # https://github.com/ageron/handson-ml/blob/master/10_introduction_to_artificial_neural_networks.ipynb
+# the techniques used in the MLP:
+# architecture: input layer-hidden layer1(300 units)-hidden layer1(100 units)-output layer
+# weights initialization: truncated_normal
+# activation: relu
+# optimization: GradientDescentOptimizer
+# accuracy: 0.9769
 
 import tensorflow as tf
 import numpy as np
@@ -7,9 +13,12 @@ n_inputs = 28*28  # MNIST
 n_hidden1 = 300
 n_hidden2 = 100
 n_outputs = 10
+learning_rate = 0.01
+n_epochs = 40
+batch_size = 50
 
 X = tf.placeholder(tf.float32, shape=(None, n_inputs), name="X")
-y = tf.placeholder(tf.int32, shape=(None), name="y")
+y = tf.placeholder(tf.int32, shape=None, name="y")
 
 
 (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
@@ -48,8 +57,6 @@ with tf.name_scope("loss"):
                                                               logits=logits)
     loss = tf.reduce_mean(xentropy, name="loss")
 
-learning_rate = 0.01
-
 with tf.name_scope("train"):
     optimizer = tf.train.GradientDescentOptimizer(learning_rate)
     training_op = optimizer.minimize(loss)
@@ -59,9 +66,6 @@ with tf.name_scope("eval"):
     accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
 init = tf.global_variables_initializer()
-
-n_epochs = 40
-batch_size = 50
 
 
 def shuffle_batch(X, y, batch_size):

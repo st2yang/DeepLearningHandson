@@ -57,15 +57,14 @@ tf.summary.scalar("loss", cost)
 tf.summary.scalar("accuracy", acc)
 # Merge all summaries into a single op
 merged_summary_op = tf.summary.merge_all()
+# op to write logs to Tensorboard
+summary_writer = tf.summary.FileWriter(logs_path, graph=tf.get_default_graph())
 
 # Start training
 with tf.Session() as sess:
 
     # Run the initializer
     sess.run(init)
-
-    # op to write logs to Tensorboard
-    summary_writer = tf.summary.FileWriter(logs_path, graph=tf.get_default_graph())
 
     # Training cycle
     for epoch in range(training_epochs):
