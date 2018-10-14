@@ -3,7 +3,7 @@
 # weights initialization: truncated_normal
 # activation: relu
 # optimization: AdamOptimizer
-# accuracy: 0.9716
+# accuracy: 0.983
 
 import tensorflow as tf
 import numpy as np
@@ -18,9 +18,10 @@ X_valid, X_train = X_train[:5000], X_train[5000:]
 y_valid, y_train = y_train[:5000], y_train[5000:]
 
 # Parameters
-learning_rate = 0.01
+learning_rate = 0.001
 num_steps = 40
 batch_size = 50
+dropout_rate = 0.2
 
 # Network Parameters
 num_input = 28 * 28  # MNIST data input (img shape: 28*28)
@@ -31,6 +32,7 @@ num_classes = 10  # MNIST total classes (0-9 digits)
 # tf Graph input
 X = tf.placeholder(tf.float32, shape=(None, num_input), name="X")
 y = tf.placeholder(tf.int32, shape=None, name="y")
+tf_is_training = tf.placeholder(tf.bool, None) # to control dropout when training and testing
 
 
 # turns out to be very important for accuracy
@@ -60,8 +62,10 @@ biases = {
 def neural_net(x):
     # Hidden fully connected layer with 256 neurons
     layer_1 = tf.nn.relu(tf.add(tf.matmul(x, weights['h1']), biases['b1']))
+    layer_1 = tf.layers.dropout(layer_1, rate=dropout_rate, training=tf_is_training)
     # Hidden fully connected layer with 256 neurons
     layer_2 = tf.nn.relu(tf.add(tf.matmul(layer_1, weights['h2']), biases['b2']))
+    layer_2 = tf.layers.dropout(layer_2, rate=dropout_rate, training=tf_is_training)
     # Output fully connected layer with a neuron for each class
     out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
     return out_layer
@@ -101,13 +105,12 @@ with tf.Session() as sess:
     for step in range(1, num_steps+1):
         for X_batch, y_batch in shuffle_batch(X_train, y_train, batch_size):
             # Run optimization op (backprop)
-            sess.run(train_op, feed_dict={X: X_batch, y: y_batch})
-        acc = sess.run(accuracy, feed_dict={X: X_valid, y: y_valid})
+            sess.run(train_op, feed_dict={X: X_batch, y: y_batch, tf_is_training: True})
+        acc = sess.run(accuracy, feed_dict={X: X_valid, y: y_valid, tf_is_training: False})
         print(step, "Val accuracy:", acc)
 
     print("Optimization Finished!")
 
     # Calculate accuracy for MNIST test images
     print("Testing Accuracy:", \
-        sess.run(accuracy, feed_dict={X: X_test,
-                                      y: y_test}))
+        sess.run(accuracy, feed_dict={X: X_test, y: y_test, tf_is_training: False}))
