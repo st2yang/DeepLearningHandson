@@ -1,5 +1,17 @@
-#folders
+# folders
 experimental/tmp/
+experimental/mnist/
+AlexNet/tmp/
+
+# mac files
+.DS_Store
+
+# jupyter
+.ipynb_checkpoints
+
+# AlexNet
+AlexNet/bvlc_alexnet.npy
+AlexNet/*.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
