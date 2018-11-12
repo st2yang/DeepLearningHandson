@@ -30,6 +30,6 @@ The code has TensorFlows summaries implemented so that you can follow the traini
 All you need to touch is the `finetune.py` where you will find a section of configuration settings you have to adapt on your problem. You have to provide two `.txt` files to the script (`train.txt` and `val.txt`). Each of them list the complete path to your train/val images together with the class number in the following structure.
 
 ### steps to run the program
-- download the file of the pretrained weights bvlc_alexnet.npy
+- download the file of the pretrained weights bvlc_alexnet.npy [here](http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/)
 - modify image_path in generate_path_label.py to generate two files
 - python3 finetune.py
