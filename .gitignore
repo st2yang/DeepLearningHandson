@@ -10,8 +10,9 @@ AlexNet/tmp/
 .ipynb_checkpoints
 
 # AlexNet
-AlexNet/bvlc_alexnet.npy
+bvlc_alexnet.npy
 AlexNet/*.txt
+SiameseTripletNet/*.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
