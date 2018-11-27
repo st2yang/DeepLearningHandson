@@ -1,125 +1,127 @@
-# Hand Signs Recognition with Tensorflow
+# Triplet loss in TensorFlow [![Build Status](https://travis-ci.org/omoindrot/tensorflow-triplet-loss.svg?branch=master)](https://travis-ci.org/omoindrot/tensorflow-triplet-loss)
+*Author: Olivier Moindrot*
 
-*Authors: Olivier Moindrot and Guillaume Genthial*
+This repository contains a triplet loss implementation in TensorFlow with online triplet mining.
+Please check the [blog post][blog] for a full description.
 
-Take the time to read the [tutorials](https://cs230-stanford.github.io).
+The code structure is adapted from code I wrote for [CS230](https://cs230.stanford.edu) in [this repository](https://github.com/cs230-stanford/cs230-code-examples) at `tensorflow/vision`.
+A set of tutorials for this code can be found [here](https://cs230-stanford.github.io).
 
-Note: all scripts must be run in folder `tensorflow/vision`.
+## TODOs
+For triplet loss
+- visualize and check the embeddings
+- use a large dataset
+- l2 norm or cosine distance, decide which one is better for similarity representation
+- figure out whether switching between batch_all and batch_hard is necessary
+For next steps
+- replace the build_model with AlexNet
+- turn the net into a classification task
 
 ## Requirements
 
-We recommend using python3 and a virtual env. See instructions [here](https://cs230-stanford.github.io/project-starter-code.html).
+We recommend using python3 and a virtual environment.
+The default `venv` should be used, or `virtualenv` with `python3`.
 
-```
-virtualenv -p python3 .env
+```bash
+python3 -m venv .env
 source .env/bin/activate
-pip install -r requirements.txt
+pip install -r requirements_cpu.txt
 ```
 
-When you're done working on the project, deactivate the virtual environment with `deactivate`.
-
-## Task
-
-Given an image of a hand doing a sign representing 0, 1, 2, 3, 4 or 5, predict the correct label.
-
-
-## Download the SIGNS dataset
-
-For the vision example, we will used the SIGNS dataset created for this class. The dataset is hosted on google drive, download it [here][SIGNS].
-
-This will download the SIGNS dataset (~1.1 GB) containing photos of hands signs making numbers between 0 and 5.
-Here is the structure of the data:
-```
-SIGNS/
-    train_signs/
-        0_IMG_5864.jpg
-        ...
-    test_signs/
-        0_IMG_5942.jpg
-        ...
-```
-
-The images are named following `{label}_IMG_{id}.jpg` where the label is in `[0, 5]`.
-The training set contains 1,080 images and the test set contains 120 images.
-
-Once the download is complete, move the dataset into `data/SIGNS`.
-Run the script `build_dataset.py` which will resize the images to size `(64, 64)`. The new reiszed dataset will be located by default in `data/64x64_SIGNS`:
-
+If you are using a GPU, you will need to install `tensorflow-gpu` so do:
 ```bash
-python build_dataset.py --data_dir data/SIGNS --output_dir data/64x64_SIGNS
+pip install -r requirements_gpu.txt
 ```
 
+## Triplet loss
+
+|![triplet-loss-img] |
+|:--:|
+| *Triplet loss on two positive faces (Obama) and one negative face (Macron)* |
 
 
-## Quickstart (~10 min)
 
-1. __Build the dataset of size 64x64__: make sure you complete this step before training
+The interesting part, defining triplet loss with triplet mining can be found in [`model/triplet_loss.py`](model/triplet_loss.py).
+
+Everything is explained in the [blog post][blog].
+
+To use the "batch all" version, you can do:
+```python
+from model.triplet_loss import batch_all_triplet_loss
+
+loss, fraction_positive = batch_all_triplet_loss(labels, embeddings, margin, squared=False)
+```
+
+In this case `fraction_positive` is a useful thing to plot in TensorBoard to track the average number of hard and semi-hard triplets.
+
+To use the "batch hard" version, you can do:
+```python
+from model.triplet_loss import batch_hard_triplet_loss
+
+loss = batch_hard_triplet_loss(labels, embeddings, margin, squared=False)
+```
+
+## Training on MNIST
+
+To run a new experiment called `base_model`, do:
 ```bash
-python build_dataset.py --data_dir data/SIGNS\ dataset/ --output_dir data/64x64_SIGNS
+python train.py --model_dir experiments/base_model
 ```
 
-2. __Your first experiment__ We created a `base_model` directory for you under the `experiments` directory. It countains a file `params.json` which sets the parameters for the experiment. It looks like
-```json
-{
-    "learning_rate": 1e-3,
-    "batch_size": 32,
-    "num_epochs": 10,
-    ...
-}
-```
-For every new experiment, you will need to create a new directory under `experiments` with a similar `params.json` file.
+You will first need to create a configuration file like this one: [`params.json`](experiments/base_model/params.json).
+This json file specifies all the hyperparameters for the model.
+All the weights and summaries will be saved in the `model_dir`.
 
-3. __Train__ your experiment. Simply run
-```
-python train.py --data_dir data/64x64_SIGNS --model_dir experiments/base_model
-```
-It will instantiate a model and train it on the training set following the parameters specified in `params.json`. It will also evaluate some metrics on the development set.
-
-4. __Your first hyperparameters search__ We created a new directory `learning_rate` in `experiments` for you. Now, run
-```
-python search_hyperparams.py --data_dir data/64x64_SIGNS --parent_dir experiments/learning_rate
-```
-It will train and evaluate a model with different values of learning rate defined in `search_hyperparams.py` and create a new directory for each experiment under `experiments/learning_rate/`.
-
-5. __Display the results__ of the hyperparameters search in a nice format
-```
-python synthesize_results.py --parent_dir experiments/learning_rate
+Once trained, you can visualize the embeddings by running:
+```bash
+python visualize_embeddings.py --model_dir experiments/base_model
 ```
 
-6. __Evaluation on the test set__ Once you've run many experiments and selected your best model and hyperparameters based on the performance on the development set, you can finally evaluate the performance of your model on the test set. Run
+And run tensorboard in the experiment directory:
+```bash
+tensorboard --logdir experiments/base_model
 ```
-python evaluate.py --data_dir data/64x64_SIGNS --model_dir experiments/base_model
+
+Here is the result ([link][embeddings-gif] to gif):
+
+|![embeddings-img] |
+|:--:|
+| *Embeddings of the MNIST test images visualized with T-SNE (perplexity 25)* |
+
+
+
+## Test
+
+To run all the tests, run this from the project directory:
+```bash
+pytest
 ```
 
+To run a specific test:
+```bash
+pytest model/tests/test_triplet_loss.py
+```
 
-## Guidelines for more advanced use
-
-We recommend reading through `train.py` to get a high-level overview of the steps:
-- loading the hyperparameters for the experiment (the `params.json`)
-- getting the filenames / labels 
-- creating the input of our model by zipping the filenames and labels together (`input_fn(...)`), reading the images as well as performing batching and shuffling.
-- creating the model (=nodes / ops of the `tf.Graph()`) by calling `model_fn(...)`
-- training the model for a given number of epochs by calling `train_and_evaluate(...)`
-
-
-Once you get the high-level idea, depending on your dataset, you might want to modify
-- `model/model_fn.py` to change the model
-- `model/input_fn.py` to change the way you read data
-- `train.py` and `evaluate.py` if somes changes in the model or input require changes here
-
-If you want to compute new metrics for which you can find a [tensorflow implementation](https://www.tensorflow.org/api_docs/python/tf/metrics), you can define it in the `model_fn.py` (add it to the `metrics` dictionnary). It will automatically be updated during the training and will be displayed at the end of each epoch.
-
-Once you get something working for your dataset, feel free to edit any part of the code to suit your own needs.
 
 ## Resources
 
-Introduction to the `tf.data` pipeline
-- [programmer's guide](https://www.tensorflow.org/programmers_guide/datasets)
-- [reading images](https://www.tensorflow.org/programmers_guide/datasets#decoding_image_data_and_resizing_it)
+- [Blog post][blog] explaining this project.
+- Source code for the built-in TensorFlow function for semi hard online mining triplet loss: [`tf.contrib.losses.metric_learning.triplet_semihard_loss`][tf-triplet-loss].
+- [Facenet paper][facenet] introducing online triplet mining
+- Detailed explanation of online triplet mining in [*In Defense of the Triplet Loss for Person Re-Identification*][in-defense]
+- Blog post by Brandom Amos on online triplet mining: [*OpenFace 0.2.0: Higher accuracy and halved execution time*][openface-blog].
+- Source code for the built-in TensorFlow function for semi hard online mining triplet loss: [`tf.contrib.losses.metric_learning.triplet_semihard_loss`][tf-triplet-loss].
+- The [coursera lecture][coursera] on triplet loss
 
 
-
-
-
-
-[SIGNS]: https://drive.google.com/file/d/1ufiR6hUKhXoAyiBNsySPkUwlvE_wfEHC/view?usp=sharing
+[blog]: https://omoindrot.github.io/triplet-loss
+[triplet-types-img]: https://omoindrot.github.io/assets/triplet_loss/triplets.png
+[triplet-loss-img]: https://omoindrot.github.io/assets/triplet_loss/triplet_loss.png
+[online-triplet-loss-img]: https://omoindrot.github.io/assets/triplet_loss/online_triplet_loss.png
+[embeddings-img]: https://omoindrot.github.io/assets/triplet_loss/embeddings.png
+[embeddings-gif]: https://omoindrot.github.io/assets/triplet_loss/embeddings.gif
+[openface-blog]: http://bamos.github.io/2016/01/19/openface-0.2.0/
+[facenet]: https://arxiv.org/abs/1503.03832
+[in-defense]: https://arxiv.org/abs/1703.07737
+[tf-triplet-loss]: https://www.tensorflow.org/api_docs/python/tf/contrib/losses/metric_learning/triplet_semihard_loss
+[coursera]: https://www.coursera.org/learn/convolutional-neural-networks/lecture/HuUtN/triplet-loss
