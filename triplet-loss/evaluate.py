@@ -1,5 +1,4 @@
 """Evaluate the model"""
-# TODO: need to save best_weights
 
 import argparse
 import logging

@@ -13,6 +13,7 @@ For triplet loss
 - use a large dataset
 - l2 norm or cosine distance, decide which one is better for similarity representation
 - figure out whether switching between batch_all and batch_hard is necessary
+
 For next steps
 - replace the build_model with AlexNet
 - turn the net into a classification task
