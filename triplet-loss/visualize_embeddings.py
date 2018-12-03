@@ -112,8 +112,11 @@ if __name__ == '__main__':
 
         model_intfs['input'] = test_inputs['images']
         sess.run(test_inputs['iterator_init_op'])
-        embeddings = sess.run(model_intfs['output'])
+        labels, embeddings = sess.run([test_inputs['labels'], model_intfs['output']])
         # TODO: to check and visualize the embeddings
 
+        idx = np.argsort(labels)
+        embeddings = embeddings[idx, ]
         dist = _pairwise_distances(embeddings)
-        print(dist)
+        # pass sanity check
+        print(dist[0, :])
