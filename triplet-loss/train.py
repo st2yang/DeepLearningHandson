@@ -62,8 +62,8 @@ if __name__ == '__main__':
     params.eval_size = len(eval_filenames)
 
     # Create the two iterators over the two datasets
-    train_inputs = input_fn(True, train_filenames, train_labels, params)
-    eval_inputs = input_fn(False, eval_filenames, eval_labels, params)
+    train_inputs = input_fn('train', train_filenames, train_labels, params)
+    eval_inputs = input_fn('eval', eval_filenames, eval_labels, params)
 
     # Define the model
     logging.info("Creating the model...")

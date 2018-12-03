@@ -6,8 +6,6 @@ import os
 
 import tensorflow as tf
 import numpy as np
-# TODO: to remove opencv
-import cv2
 
 from model.input_fn import input_fn
 from model.model_fn import model_fn
@@ -22,6 +20,48 @@ parser.add_argument('--data_dir', default='data/default',
                     help="Directory containing the dataset")
 parser.add_argument('--restore_from', default='best_weights',
                     help="Subdirectory of model dir or file containing the weights")
+
+
+def _pairwise_distances(embeddings, squared=False):
+    """Compute the 2D matrix of distances between all the embeddings.
+
+    Args:
+        embeddings: tensor of shape (batch_size, embed_dim)
+        squared: Boolean. If true, output is the pairwise squared euclidean distance matrix.
+                 If false, output is the pairwise euclidean distance matrix.
+
+    Returns:
+        pairwise_distances: tensor of shape (batch_size, batch_size)
+    """
+    # Get the dot product between all embeddings
+    # shape (batch_size, batch_size)
+    dot_product = np.matmul(embeddings, np.transpose(embeddings))
+
+    # Get squared L2 norm for each embedding. We can just take the diagonal of `dot_product`.
+    # This also provides more numerical stability (the diagonal of the result will be exactly 0).
+    # shape (batch_size,)
+    square_norm = dot_product.diagonal()
+
+    # Compute the pairwise distance matrix as we have:
+    # ||a - b||^2 = ||a||^2  - 2 <a, b> + ||b||^2
+    # shape (batch_size, batch_size)
+    distances = np.expand_dims(square_norm, 1) - 2.0 * dot_product + np.expand_dims(square_norm, 0)
+
+    # Because of computation errors, some distances might be negative so we put everything >= 0.0
+    distances = np.maximum(distances, 0.0)
+
+    if not squared:
+        # Because the gradient of sqrt is infinite when distances == 0.0 (ex: on the diagonal)
+        # we need to add a small epsilon where distances == 0.0
+        mask = (np.equal(distances, 0.0)).astype(float)
+        distances = distances + mask * 1e-16
+
+        distances = np.sqrt(distances)
+
+        # Correct the epsilon added: set the distances on the mask to be exactly 0.0
+        distances = distances * (1.0 - mask)
+
+    return distances
 
 
 if __name__ == '__main__':
@@ -48,29 +88,12 @@ if __name__ == '__main__':
 
     test_labels = [int(f.split('/')[-1][0]) for f in test_filenames]
 
-    # specify the size of the evaluation set
-    params.eval_size = len(test_filenames)
-
     # create the iterator over the dataset
-    test_inputs = input_fn(False, test_filenames, test_labels, params)
+    test_inputs = input_fn('infer', test_filenames, test_labels, params)
 
     # Define the model
     logging.info("Creating the model...")
     model_spec, model_intfs = model_fn('eval', test_inputs, params, reuse=False)
-    # images = tf.placeholder(tf.float32, [None, params.image_size, params.image_size, 3])
-
-    # Read images
-    data_dir = os.path.join(args.data_dir, "test")
-    train_filenames = [os.path.join(data_dir, f) for f in os.listdir(data_dir) if f.endswith('.jpg')]
-    images_data = np.ndarray([90, params.image_size, params.image_size, 3])
-    for i in range(len(train_filenames)):
-        img = cv2.imread(train_filenames[i])
-
-        # rescale image
-        img = cv2.resize(img, (params.image_size, params.image_size))
-        img = img.astype(np.float32)
-
-        images_data[i] = img
 
     logging.info("Starting restore")
 
@@ -87,5 +110,10 @@ if __name__ == '__main__':
             save_path = tf.train.latest_checkpoint(save_path)
         saver.restore(sess, save_path)
 
-        embeddings = sess.run(model_intfs['output'], feed_dict={model_intfs['input']: images_data})
+        model_intfs['input'] = test_inputs['images']
+        sess.run(test_inputs['iterator_init_op'])
+        embeddings = sess.run(model_intfs['output'])
         # TODO: to check and visualize the embeddings
+
+        dist = _pairwise_distances(embeddings)
+        print(dist)

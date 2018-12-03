@@ -42,14 +42,14 @@ def train_preprocess(image, label, use_random_flip):
     return image, label
 
 
-def input_fn(is_training, filenames, labels, params):
+def input_fn(mode, filenames, labels, params):
     """Input function for the SIGNS dataset.
 
     The filenames have format "{label}_IMG_{id}.jpg".
     For instance: "data_dir/2_IMG_4584.jpg".
 
     Args:
-        is_training: (bool) whether to use the train or test pipeline.
+    mode: (string) can be 'train', 'eval' or 'infer'
                      At training, we shuffle the data and have multiple epochs
         filenames: (list) filenames of the images, as ["data_dir/{label}_IMG_{id}.jpg"...]
         labels: (list) corresponding list of labels
@@ -63,7 +63,7 @@ def input_fn(is_training, filenames, labels, params):
     parse_fn = lambda f, l: _parse_function(f, l, params.image_size)
     train_fn = lambda f, l: train_preprocess(f, l, params.use_random_flip)
 
-    if is_training:
+    if mode == 'train':
         dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
             .shuffle(num_samples)  # whole dataset into the buffer ensures good shuffling
             .map(parse_fn, num_parallel_calls=params.num_parallel_calls)
@@ -71,12 +71,19 @@ def input_fn(is_training, filenames, labels, params):
             .batch(params.batch_size)
             .prefetch(1)  # make sure you always have one batch ready to serve
         )
-    else:
+    elif mode == 'eval':
         dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
             .map(parse_fn)
             .batch(params.batch_size)
             .prefetch(1)  # make sure you always have one batch ready to serve
         )
+    elif mode == 'infer':
+        dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
+            .map(parse_fn)
+            .batch(num_samples)
+        )
+    else:
+        raise ValueError("data pipeline mode input wrong")
 
     # Create reinitializable iterator from dataset
     iterator = dataset.make_initializable_iterator()

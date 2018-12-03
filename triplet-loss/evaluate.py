@@ -50,7 +50,7 @@ if __name__ == '__main__':
     params.eval_size = len(test_filenames)
 
     # create the iterator over the dataset
-    test_inputs = input_fn(False, test_filenames, test_labels, params)
+    test_inputs = input_fn('eval', test_filenames, test_labels, params)
 
     # Define the model
     logging.info("Creating the model...")
