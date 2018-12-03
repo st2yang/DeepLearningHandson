@@ -5,48 +5,50 @@ from model.triplet_loss import batch_all_triplet_loss
 from model.triplet_loss import batch_hard_triplet_loss
 
 
-def build_model(is_training, inputs, params):
-    """Compute logits of the model (output distribution)
+class BaseNet:
+    def __init__(self, is_training, images, params):
+        self.out = self.build_model(is_training, images, params)
 
-    Args:
-        is_training: (bool) whether we are training or not
-        inputs: (dict) contains the inputs of the graph (features, labels...)
-                this can be `tf.placeholder` or outputs of `tf.data`
-        params: (Params) hyperparameters
+    def build_model(self, is_training, images, params):
+        """Compute logits of the model (output distribution)
 
-    Returns:
-        output: (tf.Tensor) output of the model
-    """
-    images = inputs['images']
+        Args:
+            is_training: (bool) whether we are training or not
+            images: this can be `tf.placeholder` or outputs of `tf.data`
+            params: (Params) hyperparameters
 
-    assert images.get_shape().as_list() == [None, params.image_size, params.image_size, 3]
+        Returns:
+            output: (tf.Tensor) output of the model
+        """
 
-    out = images
-    # Define the number of channels of each convolution
-    # For each block, we do: 3x3 conv -> batch norm -> relu -> 2x2 maxpool
-    num_channels = params.num_channels
-    bn_momentum = params.bn_momentum
-    channels = [num_channels, num_channels * 2, num_channels * 4, num_channels * 8]
-    for i, c in enumerate(channels):
-        with tf.variable_scope('block_{}'.format(i+1)):
-            out = tf.layers.conv2d(out, c, 3, padding='same')
+        assert images.get_shape().as_list() == [None, params.image_size, params.image_size, 3]
+
+        out = images
+        # Define the number of channels of each convolution
+        # For each block, we do: 3x3 conv -> batch norm -> relu -> 2x2 maxpool
+        num_channels = params.num_channels
+        bn_momentum = params.bn_momentum
+        channels = [num_channels, num_channels * 2, num_channels * 4, num_channels * 8]
+        for i, c in enumerate(channels):
+            with tf.variable_scope('block_{}'.format(i + 1)):
+                out = tf.layers.conv2d(out, c, 3, padding='same')
+                if params.use_batch_norm:
+                    out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
+                out = tf.nn.relu(out)
+                out = tf.layers.max_pooling2d(out, 2, 2)
+
+        assert out.get_shape().as_list() == [None, 4, 4, num_channels * 8]
+
+        out = tf.reshape(out, [-1, 4 * 4 * num_channels * 8])
+        with tf.variable_scope('fc_1'):
+            out = tf.layers.dense(out, num_channels * 8)
             if params.use_batch_norm:
                 out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
             out = tf.nn.relu(out)
-            out = tf.layers.max_pooling2d(out, 2, 2)
+        with tf.variable_scope('fc_2'):
+            out = tf.layers.dense(out, params.embedding_size)
 
-    assert out.get_shape().as_list() == [None, 4, 4, num_channels * 8]
-
-    out = tf.reshape(out, [-1, 4 * 4 * num_channels * 8])
-    with tf.variable_scope('fc_1'):
-        out = tf.layers.dense(out, num_channels * 8)
-        if params.use_batch_norm:
-            out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
-        out = tf.nn.relu(out)
-    with tf.variable_scope('fc_2'):
-        out = tf.layers.dense(out, params.embedding_size)
-
-    return out
+        return out
 
 
 def model_fn(mode, inputs, params, reuse=False):
@@ -70,7 +72,10 @@ def model_fn(mode, inputs, params, reuse=False):
     # MODEL: define the layers of the model
     with tf.variable_scope('model', reuse=reuse):
         # Compute the output distribution of the model and the predictions
-        embeddings = build_model(is_training, inputs, params)
+        images = inputs['images']
+        model = BaseNet(is_training, images, params)
+        embeddings = model.out
+        model_intfs = {'input': images, 'output': embeddings}
     embedding_mean_norm = tf.reduce_mean(tf.norm(embeddings, axis=1))
     tf.summary.scalar("embedding_mean_norm", embedding_mean_norm)
 
@@ -133,4 +138,4 @@ def model_fn(mode, inputs, params, reuse=False):
     if is_training:
         model_spec['train_op'] = train_op
 
-    return model_spec
+    return model_spec, model_intfs

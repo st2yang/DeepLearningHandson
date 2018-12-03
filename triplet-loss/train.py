@@ -67,8 +67,8 @@ if __name__ == '__main__':
 
     # Define the model
     logging.info("Creating the model...")
-    train_model_spec = model_fn('train', train_inputs, params)
-    eval_model_spec = model_fn('eval', eval_inputs, params, reuse=True)
+    train_model_spec, _ = model_fn('train', train_inputs, params)
+    eval_model_spec, _ = model_fn('eval', eval_inputs, params, reuse=True)
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
