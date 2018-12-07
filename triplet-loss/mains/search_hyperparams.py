@@ -5,7 +5,7 @@ import os
 from subprocess import check_call
 import sys
 
-from model.utils import Params
+from helpers.utils import Params
 
 
 PYTHON = sys.executable
@@ -17,7 +17,7 @@ parser.add_argument('--data_dir', default='data/default',
 
 
 def launch_training_job(parent_dir, data_dir, job_name, params):
-    """Launch training of the model with a set of hyperparameters in parent_dir/job_name
+    """Launch training of the helpers with a set of hyperparameters in parent_dir/job_name
 
     Args:
         parent_dir: (string) directory containing config, weights and log

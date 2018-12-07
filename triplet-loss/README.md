@@ -1,22 +1,14 @@
-# Triplet loss in TensorFlow [![Build Status](https://travis-ci.org/omoindrot/tensorflow-triplet-loss.svg?branch=master)](https://travis-ci.org/omoindrot/tensorflow-triplet-loss)
-*Author: Olivier Moindrot*
-
-This repository contains a triplet loss implementation in TensorFlow with online triplet mining.
-Please check the [blog post][blog] for a full description.
-
-The code structure is adapted from code I wrote for [CS230](https://cs230.stanford.edu) in [this repository](https://github.com/cs230-stanford/cs230-code-examples) at `tensorflow/vision`.
-A set of tutorials for this code can be found [here](https://cs230-stanford.github.io).
-
 ## TODOs
 For triplet loss
-- visualize and check the embeddings
+- [x] check the embeddings
+- visualize the embeddings
 - use a large dataset
 - l2 norm or cosine distance, decide which one is better for similarity representation
 - figure out whether switching between batch_all and batch_hard is necessary
 
 For next steps
 - replace the build_model with AlexNet
-- turn the net into a classification task
+- [x] turn the net into a classification task
 
 ## Requirements
 
@@ -42,7 +34,7 @@ pip install -r requirements_gpu.txt
 
 
 
-The interesting part, defining triplet loss with triplet mining can be found in [`model/triplet_loss.py`](model/triplet_loss.py).
+The interesting part, defining triplet loss with triplet mining can be found in [`model/triplet_loss.py`](models/triplet_loss.py).
 
 Everything is explained in the [blog post][blog].
 
@@ -105,7 +97,8 @@ pytest model/tests/test_triplet_loss.py
 
 
 ## Resources
-
+- [CS230 code template][CS230]
+- [triplet loss tensorflow implementation][triplet implementation]
 - [Blog post][blog] explaining this project.
 - Source code for the built-in TensorFlow function for semi hard online mining triplet loss: [`tf.contrib.losses.metric_learning.triplet_semihard_loss`][tf-triplet-loss].
 - [Facenet paper][facenet] introducing online triplet mining
@@ -114,7 +107,8 @@ pytest model/tests/test_triplet_loss.py
 - Source code for the built-in TensorFlow function for semi hard online mining triplet loss: [`tf.contrib.losses.metric_learning.triplet_semihard_loss`][tf-triplet-loss].
 - The [coursera lecture][coursera] on triplet loss
 
-
+[CS230]: https://cs230.stanford.edu
+[triplet implementation]: https://github.com/omoindrot/tensorflow-triplet-loss
 [blog]: https://omoindrot.github.io/triplet-loss
 [triplet-types-img]: https://omoindrot.github.io/assets/triplet_loss/triplets.png
 [triplet-loss-img]: https://omoindrot.github.io/assets/triplet_loss/triplet_loss.png

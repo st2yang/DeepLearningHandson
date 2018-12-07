@@ -1,10 +1,10 @@
 """Define the model."""
 
 import tensorflow as tf
-from model.triplet_loss import batch_all_triplet_loss
-from model.triplet_loss import batch_hard_triplet_loss
-from model.base_net import BaseNet
-from model.classifier import Classifier
+from models.triplet_loss import batch_all_triplet_loss
+from models.triplet_loss import batch_hard_triplet_loss
+from models.base_net import BaseNet
+from models.classifier import Classifier
 
 
 def model_fn(mode, inputs, params, reuse=False):

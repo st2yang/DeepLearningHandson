@@ -1,4 +1,4 @@
-"""Evaluate the model"""
+"""Evaluate the helpers"""
 
 import argparse
 import logging
@@ -7,19 +7,19 @@ import os
 import tensorflow as tf
 import numpy as np
 
-from model.input_fn import input_fn
-from model.model_fn import model_fn
-from model.utils import Params
-from model.utils import set_logger
+from helpers.input_fn import input_fn
+from models.model_fn import model_fn
+from helpers.utils import Params
+from helpers.utils import set_logger
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model_dir', default='experiments/test',
+parser.add_argument('--model_dir', default='../experiments/test',
                     help="Experiment directory containing params.json")
-parser.add_argument('--data_dir', default='data/default',
+parser.add_argument('--data_dir', default='../data/default',
                     help="Directory containing the dataset")
 parser.add_argument('--restore_from', default='best_weights',
-                    help="Subdirectory of model dir or file containing the weights")
+                    help="Subdirectory of helpers dir or file containing the weights")
 
 
 def _pairwise_distances(embeddings, squared=False):
@@ -91,8 +91,8 @@ if __name__ == '__main__':
     # create the iterator over the dataset
     test_inputs = input_fn('infer', test_filenames, test_labels, params)
 
-    # Define the model
-    logging.info("Creating the model...")
+    # Define the helpers
+    logging.info("Creating the helpers...")
     model_spec, model_intfs = model_fn('eval', test_inputs, params, reuse=False)
 
     logging.info("Starting restore")

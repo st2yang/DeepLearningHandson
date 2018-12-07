@@ -6,8 +6,8 @@ import os
 from tqdm import trange
 import tensorflow as tf
 
-from model.utils import save_dict_to_json
-from model.evaluation import evaluate_sess
+from helpers.utils import save_dict_to_json
+from helpers.evaluation import evaluate_sess
 
 
 def train_sess(sess, train_spec, num_steps, writer, params):
@@ -17,7 +17,7 @@ def train_sess(sess, train_spec, num_steps, writer, params):
     update_metrics = train_spec['update_metrics']
     metrics = train_spec['metrics']
     summary_op = train_spec['summary_op']
-    # TODO: see if global_step has effect on optimizer and model save
+    # TODO: see if global_step has effect on optimizer and helpers save
     global_step = tf.train.get_global_step()
 
     # Load the training dataset into the pipeline and initialize the metrics local variables
@@ -46,13 +46,13 @@ def train_sess(sess, train_spec, num_steps, writer, params):
 
 
 def train_and_evaluate(train_model_spec, eval_model_spec, model_dir, params, restore_from=None):
-    """Train the model and evaluate every epoch.
+    """Train the helpers and evaluate every epoch.
 
     Args:
         train_model_spec: (dict) contains the graph operations or nodes needed for training
         eval_model_spec: (dict) contains the graph operations or nodes needed for evaluation
         model_dir: (string) directory containing config, weights and log
-        params: (Params) contains hyperparameters of the model.
+        params: (Params) contains hyperparameters of the helpers.
                 Must define: num_epochs, train_size, batch_size, eval_size, save_summary_steps
         restore_from: (string) directory or file containing weights to restore the graph
     """
@@ -62,7 +62,7 @@ def train_and_evaluate(train_model_spec, eval_model_spec, model_dir, params, res
     epoch_count = 0
 
     with tf.Session() as sess:
-        # Initialize model variables
+        # Initialize helpers variables
         sess.run(train_model_spec['variable_init_op'])
 
         # Reload weights from directory if specified
@@ -98,7 +98,7 @@ def train_and_evaluate(train_model_spec, eval_model_spec, model_dir, params, res
                 best_save_path = os.path.join(model_dir, 'best_weights', 'after-epoch')
                 best_save_path = best_saver.save(sess, best_save_path, global_step=epoch + 1)
                 logging.info("- Found new best tri_loss, saving in {}".format(best_save_path))
-                # Save best eval metrics in a json file in the model directory
+                # Save best eval metrics in a json file in the helpers directory
                 best_json_path = os.path.join(model_dir, "metrics_eval_best_weights.json")
                 save_dict_to_json(metrics, best_json_path)
 
@@ -123,6 +123,6 @@ def train_and_evaluate(train_model_spec, eval_model_spec, model_dir, params, res
                 best_save_path = os.path.join(model_dir, 'best_weights', 'after-epoch')
                 best_save_path = best_saver.save(sess, best_save_path, global_step=epoch + 1)
                 logging.info("- Found new best accuracy, saving in {}".format(best_save_path))
-                # Save best eval metrics in a json file in the model directory
+                # Save best eval metrics in a json file in the helpers directory
                 best_json_path = os.path.join(model_dir, "metrics_eval_best_weights.json")
                 save_dict_to_json(metrics, best_json_path)

@@ -6,17 +6,17 @@ import os
 
 import tensorflow as tf
 
-from model.input_fn import input_fn
-from model.model_fn import model_fn
-from model.evaluation import evaluate
-from model.utils import Params
-from model.utils import set_logger
+from helpers.input_fn import input_fn
+from models.model_fn import model_fn
+from helpers.evaluation import evaluate
+from helpers.utils import Params
+from helpers.utils import set_logger
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model_dir', default='experiments/test',
+parser.add_argument('--model_dir', default='../experiments/test',
                     help="Experiment directory containing params.json")
-parser.add_argument('--data_dir', default='data/default',
+parser.add_argument('--data_dir', default='../data/default',
                     help="Directory containing the dataset")
 
 if __name__ == '__main__':

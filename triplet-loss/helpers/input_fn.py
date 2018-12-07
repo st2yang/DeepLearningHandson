@@ -53,7 +53,7 @@ def input_fn(mode, filenames, labels, params):
                      At training, we shuffle the data and have multiple epochs
         filenames: (list) filenames of the images, as ["data_dir/{label}_IMG_{id}.jpg"...]
         labels: (list) corresponding list of labels
-        params: (Params) contains hyperparameters of the model (ex: `params.num_epochs`)
+        params: (Params) contains hyperparameters of the helpers (ex: `params.num_epochs`)
     """
     num_samples = len(filenames)
     assert len(filenames) == len(labels), "Filenames and labels should have same length"
