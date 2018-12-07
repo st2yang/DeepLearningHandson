@@ -18,9 +18,6 @@ parser.add_argument('--model_dir', default='experiments/test',
                     help="Experiment directory containing params.json")
 parser.add_argument('--data_dir', default='data/default',
                     help="Directory containing the dataset")
-parser.add_argument('--restore_from', default=None,
-                    help="Optional, directory or file containing weights to reload before training")
-
 
 if __name__ == '__main__':
     # Set the random seed for the whole graph for reproductible experiments
@@ -31,12 +28,6 @@ if __name__ == '__main__':
     json_path = os.path.join(args.model_dir, 'params.json')
     assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
     params = Params(json_path)
-
-    # Check that we are not overwriting some previous experiment
-    # Comment these lines if you are developing your model and don't care about overwritting
-    model_dir_has_best_weights = os.path.isdir(os.path.join(args.model_dir, "best_weights"))
-    overwritting = model_dir_has_best_weights and args.restore_from is None
-    assert not overwritting, "Weights found in model_dir, aborting to avoid overwrite"
 
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
@@ -72,5 +63,6 @@ if __name__ == '__main__':
     eval_model_spec, _ = model_fn('eval', eval_inputs, params, reuse=True)
 
     # Train the model
-    logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
-    train_and_evaluate(train_model_spec, eval_model_spec, args.model_dir, params, args.restore_from)
+    logging.info("Starting training.")
+    restore_from = os.path.join(args.model_dir, "best_weights")
+    train_and_evaluate(train_model_spec, eval_model_spec, args.model_dir, params, restore_from)
