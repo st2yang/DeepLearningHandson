@@ -18,9 +18,6 @@ parser.add_argument('--model_dir', default='experiments/test',
                     help="Experiment directory containing params.json")
 parser.add_argument('--data_dir', default='data/default',
                     help="Directory containing the dataset")
-parser.add_argument('--restore_from', default='best_weights',
-                    help="Subdirectory of model dir or file containing the weights")
-
 
 if __name__ == '__main__':
     # Set the random seed for the whole graph
@@ -57,4 +54,5 @@ if __name__ == '__main__':
     model_spec, _ = model_fn('eval', test_inputs, params, reuse=False)
 
     logging.info("Starting evaluation")
-    evaluate(model_spec, args.model_dir, params, args.restore_from)
+    restore_from = os.path.join(args.model_dir, "best_weights")
+    evaluate(model_spec, params, restore_from)

@@ -10,6 +10,6 @@ class Classifier:
             out = tf.layers.dense(embeddings, int(params.embedding_size * 0.5))
             out = tf.nn.relu(out)
         with tf.variable_scope('classify_fc_2'):
-            logits = tf.layers.dense(out, params.num_classes)
+            logits = tf.layers.dense(out, params.num_labels)
 
         return logits

@@ -46,12 +46,11 @@ def evaluate_sess(sess, model_spec, num_steps, writer=None, params=None):
     return metrics_val
 
 
-def evaluate(model_spec, model_dir, params, restore_from):
+def evaluate(eval_model_spec, params, restore_from):
     """Evaluate the model
 
     Args:
-        model_spec: (dict) contains the graph operations or nodes needed for evaluation
-        model_dir: (string) directory containing config, weights and log
+        eval_model_spec: (dict) contains the graph operations or nodes needed for evaluation
         params: (Params) contains hyperparameters of the model.
                 Must define: num_epochs, train_size, batch_size, eval_size, save_summary_steps
         restore_from: (string) directory or file containing weights to restore the graph
@@ -61,17 +60,16 @@ def evaluate(model_spec, model_dir, params, restore_from):
 
     with tf.Session() as sess:
         # Initialize the lookup table
-        sess.run(model_spec['variable_init_op'])
+        sess.run(eval_model_spec['variable_init_op'])
 
         # Reload weights from the weights subdirectory
-        save_path = os.path.join(model_dir, restore_from)
-        if os.path.isdir(save_path):
-            save_path = tf.train.latest_checkpoint(save_path)
-        saver.restore(sess, save_path)
+        if os.path.isdir(restore_from) and os.listdir(restore_from):
+            save_path = tf.train.latest_checkpoint(restore_from)
+            saver.restore(sess, save_path)
+        else:
+            raise ValueError("No checkpoint folder or file")
 
         # Evaluate
         num_steps = (params.eval_size + params.batch_size - 1) // params.batch_size
-        metrics = evaluate_sess(sess, model_spec, num_steps)
-        metrics_name = '_'.join(restore_from.split('/'))
-        save_path = os.path.join(model_dir, "metrics_test_{}.json".format(metrics_name))
-        save_dict_to_json(metrics, save_path)
+        evaluate_sess(sess, eval_model_spec['tri_related'], num_steps)
+        evaluate_sess(sess, eval_model_spec['cls_related'], num_steps)
