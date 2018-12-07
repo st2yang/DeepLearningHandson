@@ -56,6 +56,7 @@ if __name__ == '__main__':
     # Labels will be between 0 and 5 included (6 classes in total)
     train_labels = [int(f.split('/')[-1][0]) for f in train_filenames]
     eval_labels = [int(f.split('/')[-1][0]) for f in eval_filenames]
+    params.num_classes = len(set(train_labels))
 
     # Specify the sizes of the dataset we train on and evaluate on
     params.train_size = len(train_filenames)
