@@ -8,7 +8,7 @@ import tensorflow as tf
 import numpy as np
 
 from helpers.input_fn import input_fn
-from models.model_fn import model_fn
+from models.tricls_model import TriClsModel
 from helpers.utils import Params
 from helpers.utils import set_logger
 
@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     # Define the helpers
     logging.info("Creating the helpers...")
-    model_spec, model_intfs = model_fn('eval', test_inputs, params, reuse=False)
+    model = TriClsModel('eval', test_inputs, params, reuse=False)
 
     logging.info("Starting restore")
 
@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
     with tf.Session() as sess:
         # Initialize the lookup table
-        sess.run(model_spec['variable_init_op'])
+        sess.run(model.model_spec['variable_init_op'])
 
         # Reload weights from the weights subdirectory
         save_path = os.path.join(args.model_dir, args.restore_from)
@@ -110,9 +110,10 @@ if __name__ == '__main__':
             save_path = tf.train.latest_checkpoint(save_path)
         saver.restore(sess, save_path)
 
-        model_intfs['input'] = test_inputs['images']
+        # TODO: to see if appropriate
+        model.tri_intfs['input'] = test_inputs['images']
         sess.run(test_inputs['iterator_init_op'])
-        labels, embeddings = sess.run([test_inputs['labels'], model_intfs['output']])
+        labels, embeddings = sess.run([test_inputs['labels'], model.tri_intfs['output']])
         # TODO: to check and visualize the embeddings
 
         idx = np.argsort(labels)

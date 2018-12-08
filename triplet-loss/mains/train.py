@@ -9,7 +9,7 @@ import tensorflow as tf
 from helpers.input_fn import input_fn
 from helpers.utils import Params
 from helpers.utils import set_logger
-from models.model_fn import model_fn
+from models.tricls_model import TriClsModel
 from helpers.training import train_and_evaluate
 
 
@@ -58,10 +58,10 @@ if __name__ == '__main__':
 
     # Define the model
     logging.info("Creating the model...")
-    train_model_spec, _ = model_fn('train', train_inputs, params)
-    eval_model_spec, _ = model_fn('eval', eval_inputs, params, reuse=True)
+    train_model = TriClsModel('train', train_inputs, params)
+    eval_model = TriClsModel('eval', eval_inputs, params, reuse=True)
 
     # Train the model
     logging.info("Starting training.")
     restore_from = os.path.join(args.model_dir, "best_weights")
-    train_and_evaluate(train_model_spec, eval_model_spec, args.model_dir, params, restore_from)
+    train_and_evaluate(train_model.model_spec, eval_model.model_spec, args.model_dir, params, restore_from)
