@@ -29,7 +29,6 @@ class TriClsModel:
         is_training = (self.mode == 'train')
         labels = inputs['labels']
         labels = tf.cast(labels, tf.int64)
-        images = inputs['images']
 
         # -----------------------------------------------------------
         # MODEL: define the layers of the model

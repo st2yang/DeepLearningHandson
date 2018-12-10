@@ -105,7 +105,8 @@ def load_data(mode, data_dir, data_path, params):
     if mode == 'train':
         # build the dict
         class_dict = {}
-        for i in range(len(class_names)):
+        params.num_labels = len(class_names)
+        for i in range(params.num_labels):
             class_dict[class_names[i]] = i
         np.save(os.path.join(data_dir, 'class_dict.npy'), class_dict)
     else:
