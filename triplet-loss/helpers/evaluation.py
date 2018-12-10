@@ -9,7 +9,7 @@ from helpers.utils import save_dict_to_json
 
 
 def evaluate_sess(sess, model_spec, num_steps, writer=None, params=None):
-    """Train the helpers on `num_steps` batches.
+    """Train the model on `num_steps` batches.
 
     Args:
         sess: (tf.Session) current session
@@ -47,11 +47,11 @@ def evaluate_sess(sess, model_spec, num_steps, writer=None, params=None):
 
 
 def evaluate(eval_model_spec, params, restore_from):
-    """Evaluate the helpers
+    """Evaluate the model
 
     Args:
         eval_model_spec: (dict) contains the graph operations or nodes needed for evaluation
-        params: (Params) contains hyperparameters of the helpers.
+        params: (Params) contains hyperparameters of the model.
                 Must define: num_epochs, train_size, batch_size, eval_size, save_summary_steps
         restore_from: (string) directory or file containing weights to restore the graph
     """

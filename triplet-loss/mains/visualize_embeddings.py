@@ -1,4 +1,4 @@
-"""Evaluate the helpers"""
+"""Evaluate the model"""
 
 import argparse
 import logging
@@ -19,7 +19,7 @@ parser.add_argument('--model_dir', default='../experiments/test',
 parser.add_argument('--data_dir', default='../data/default',
                     help="Directory containing the dataset")
 parser.add_argument('--restore_from', default='best_weights',
-                    help="Subdirectory of helpers dir or file containing the weights")
+                    help="Subdirectory of model dir or file containing the weights")
 
 
 def _pairwise_distances(embeddings, squared=False):
@@ -84,8 +84,8 @@ if __name__ == '__main__':
 
     test_inputs = load_data('infer', data_dir, test_data_dir, params)
 
-    # Define the helpers
-    logging.info("Creating the helpers...")
+    # Define the model
+    logging.info("Creating the model...")
     model = TriClsModel('eval', test_inputs, params, reuse=False)
 
     logging.info("Starting restore")
