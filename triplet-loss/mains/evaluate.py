@@ -6,7 +6,7 @@ import os
 
 import tensorflow as tf
 
-from helpers.input_fn import input_fn
+from helpers.input_fn import load_data
 from models.tricls_model import TriClsModel
 from helpers.evaluation import evaluate
 from helpers.utils import Params
@@ -37,17 +37,8 @@ if __name__ == '__main__':
     data_dir = args.data_dir
     test_data_dir = os.path.join(data_dir, "test")
 
-    # Get the filenames from the test set
-    test_filenames = os.listdir(test_data_dir)
-    test_filenames = [os.path.join(test_data_dir, f) for f in test_filenames if f.endswith('.jpg')]
-
-    test_labels = [int(f.split('/')[-1][0]) for f in test_filenames]
-
-    # specify the size of the evaluation set
-    params.eval_size = len(test_filenames)
-
     # create the iterator over the dataset
-    test_inputs = input_fn('eval', test_filenames, test_labels, params)
+    test_inputs = load_data('eval', data_dir, test_data_dir, params)
 
     # Define the model
     logging.info("Creating the model...")

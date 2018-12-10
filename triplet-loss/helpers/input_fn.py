@@ -1,6 +1,9 @@
 """Create the input data pipeline using `tf.data`"""
 
+import numpy as np
 import tensorflow as tf
+import os
+from collections import defaultdict
 
 
 def _parse_function(filename, label, size):
@@ -64,6 +67,7 @@ def input_fn(mode, filenames, labels, params):
     train_fn = lambda f, l: train_preprocess(f, l, params.use_random_flip)
 
     if mode == 'train':
+        params.train_size = num_samples
         dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
             .shuffle(num_samples)  # whole dataset into the buffer ensures good shuffling
             .map(parse_fn, num_parallel_calls=params.num_parallel_calls)
@@ -72,6 +76,7 @@ def input_fn(mode, filenames, labels, params):
             .prefetch(1)  # make sure you always have one batch ready to serve
         )
     elif mode == 'eval':
+        params.eval_size = num_samples
         dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
             .map(parse_fn)
             .batch(params.batch_size)
@@ -92,3 +97,42 @@ def input_fn(mode, filenames, labels, params):
 
     inputs = {'images': images, 'labels': labels, 'iterator_init_op': iterator_init_op}
     return inputs
+
+
+def load_data(mode, data_dir, data_path, params):
+    class_names = sorted([dirname for dirname in os.listdir(data_path)
+                          if os.path.isdir(os.path.join(data_path, dirname))])
+    if mode == 'train':
+        # build the dict
+        class_dict = {}
+        for i in range(len(class_names)):
+            class_dict[class_names[i]] = i
+        np.save(os.path.join(data_dir, 'class_dict.npy'), class_dict)
+    else:
+        # read the dict
+        class_dict = np.load(os.path.join(data_dir, 'class_dict.npy')).item()
+
+    image_paths = defaultdict(list)
+
+    for class_name in class_names:
+        image_dir = os.path.join(data_path, class_name)
+        for filepath in os.listdir(image_dir):
+            if filepath.endswith(".jpg"):
+                if class_dict[class_name] is not None:
+                    image_paths[class_dict[class_name]].append(os.path.join(image_dir, filepath))
+                else:
+                    raise ValueError("found class not in train data")
+
+    filenames = []
+    labels = []
+
+    for label in image_paths.keys():
+        filenames.extend(image_paths[label])
+        labels.extend([label] * len(image_paths[label]))
+
+    # shuffle the lists for tri_loss evaluation
+    zip_list = list(zip(filenames, labels))
+    np.random.shuffle(zip_list)
+    filenames, labels = zip(*zip_list)
+
+    return input_fn(mode, filenames, labels, params)

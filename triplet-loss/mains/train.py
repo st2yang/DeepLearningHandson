@@ -6,7 +6,7 @@ import os
 
 import tensorflow as tf
 
-from helpers.input_fn import input_fn
+from helpers.input_fn import load_data
 from helpers.utils import Params
 from helpers.utils import set_logger
 from models.tricls_model import TriClsModel
@@ -38,23 +38,8 @@ if __name__ == '__main__':
     train_data_dir = os.path.join(data_dir, "train")
     dev_data_dir = os.path.join(data_dir, "dev")
 
-    # Get the filenames from the train and dev sets
-    train_filenames = [os.path.join(train_data_dir, f) for f in os.listdir(train_data_dir)
-                       if f.endswith('.jpg')]
-    eval_filenames = [os.path.join(dev_data_dir, f) for f in os.listdir(dev_data_dir)
-                      if f.endswith('.jpg')]
-
-    # Labels will be between 0 and 5 included (6 classes in total)
-    train_labels = [int(f.split('/')[-1][0]) for f in train_filenames]
-    eval_labels = [int(f.split('/')[-1][0]) for f in eval_filenames]
-
-    # Specify the sizes of the dataset we train on and evaluate on
-    params.train_size = len(train_filenames)
-    params.eval_size = len(eval_filenames)
-
-    # Create the two iterators over the two datasets
-    train_inputs = input_fn('train', train_filenames, train_labels, params)
-    eval_inputs = input_fn('eval', eval_filenames, eval_labels, params)
+    train_inputs = load_data('train', data_dir, train_data_dir, params)
+    eval_inputs = load_data('eval', data_dir, dev_data_dir, params)
 
     # Define the model
     logging.info("Creating the model...")

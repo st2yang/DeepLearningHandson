@@ -7,7 +7,7 @@ import os
 import tensorflow as tf
 import numpy as np
 
-from helpers.input_fn import input_fn
+from helpers.input_fn import load_data
 from models.tricls_model import TriClsModel
 from helpers.utils import Params
 from helpers.utils import set_logger
@@ -82,14 +82,7 @@ if __name__ == '__main__':
     data_dir = args.data_dir
     test_data_dir = os.path.join(data_dir, "test")
 
-    # Get the filenames from the test set
-    test_filenames = os.listdir(test_data_dir)
-    test_filenames = [os.path.join(test_data_dir, f) for f in test_filenames if f.endswith('.jpg')]
-
-    test_labels = [int(f.split('/')[-1][0]) for f in test_filenames]
-
-    # create the iterator over the dataset
-    test_inputs = input_fn('infer', test_filenames, test_labels, params)
+    test_inputs = load_data('infer', data_dir, test_data_dir, params)
 
     # Define the helpers
     logging.info("Creating the helpers...")
