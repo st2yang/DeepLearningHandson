@@ -86,7 +86,7 @@ def _get_anchor_negative_triplet_mask(labels):
     return mask
 
 
-def _get_triplet_mask(labels):
+def _get_triplet_mask(labels, time, time_thold):
     """Return a 3D mask where mask[a, p, n] is True iff the triplet (a, p, n) is valid.
 
     A triplet (i, j, k) is valid if:
@@ -110,23 +110,35 @@ def _get_triplet_mask(labels):
     i_equal_j = tf.expand_dims(label_equal, 2)
     i_equal_k = tf.expand_dims(label_equal, 1)
 
-    valid_labels = tf.logical_and(i_equal_j, tf.logical_not(i_equal_k))
+    # Check abs(time[i]-time[j]) + time_thold < abs(time[i]-time[k])
+    time_ij = tf.math.abs(tf.expand_dims(time, 1) - tf.expand_dims(time, 0))
+    time_ik = tf.math.abs(tf.expand_dims(time, 1) - tf.expand_dims(time, 0))
+    time_ijk = tf.less(tf.expand_dims(time_ij, 2) + time_thold, tf.expand_dims(time_ik, 1))
+
+    valid_between_labels = tf.logical_and(i_equal_j, tf.logical_not(i_equal_k))
+    valid_within_labels = tf.logical_and(tf.logical_and(i_equal_j, i_equal_k), time_ijk)
 
     # Combine the two masks
-    mask = tf.logical_and(distinct_indices, valid_labels)
+    mask_between = tf.logical_and(distinct_indices, valid_between_labels)
+    mask_within = tf.logical_and(distinct_indices, valid_within_labels)
 
-    return mask
+    return mask_between, mask_within
 
 
-def batch_all_triplet_loss(labels, embeddings, margin, squared=False):
+def batch_all_triplet_loss(labels, time, embeddings, margin_between,
+                           margin_within, time_thold, loss_ratio=1, squared=False):
     """Build the triplet loss over a batch of embeddings.
 
     We generate all the valid triplets and average the loss over the positive ones.
 
     Args:
         labels: labels of the batch, of size (batch_size,)
+        time: time of the batch, of size (batch_size,)
         embeddings: tensor of shape (batch_size, embed_dim)
-        margin: margin for triplet loss
+        margin_between: margin for triplet loss in between_class case
+        margin_within: margin for triplet loss in within_class case
+        time_thold: time difference to decide within_class case
+        loss_ratio: the weight to combine triplet_loss_between and triplet_loss_within
         squared: Boolean. If true, output is the pairwise squared euclidean distance matrix.
                  If false, output is the pairwise euclidean distance matrix.
 
@@ -147,27 +159,45 @@ def batch_all_triplet_loss(labels, embeddings, margin, squared=False):
     # triplet_loss[i, j, k] will contain the triplet loss of anchor=i, positive=j, negative=k
     # Uses broadcasting where the 1st argument has shape (batch_size, batch_size, 1)
     # and the 2nd (batch_size, 1, batch_size)
-    triplet_loss = anchor_positive_dist - anchor_negative_dist + margin
+    triplet_loss = anchor_positive_dist - anchor_negative_dist
+
+    # Get the mask for between_class case and within_class case
+    mask_between, mask_within = _get_triplet_mask(labels, time, time_thold)
 
     # Put to zero the invalid triplets
     # (where label(a) != label(p) or label(n) == label(a) or a == p)
-    mask = _get_triplet_mask(labels)
-    mask = tf.to_float(mask)
-    triplet_loss = tf.multiply(mask, triplet_loss)
+    mask_between = tf.to_float(mask_between)
+    triplet_loss_between = triplet_loss + margin_between
+    triplet_loss_between = tf.multiply(mask_between, triplet_loss_between)
+
+    # Put to zero the invalid triplets
+    # (valid: a,p,n in same class, and a,p more close in time)
+    mask_within = tf.to_float(mask_within)
+    triplet_loss_within = triplet_loss + margin_within
+    triplet_loss_within = tf.multiply(mask_within, triplet_loss_within)
 
     # Remove negative losses (i.e. the easy triplets)
-    triplet_loss = tf.maximum(triplet_loss, 0.0)
+    triplet_loss_between = tf.maximum(triplet_loss_between, 0.0)
+    triplet_loss_within = tf.maximum(triplet_loss_within, 0.0)
 
     # Count number of positive triplets (where triplet_loss > 0)
-    valid_triplets = tf.to_float(tf.greater(triplet_loss, 1e-16))
-    num_positive_triplets = tf.reduce_sum(valid_triplets)
-    num_valid_triplets = tf.reduce_sum(mask)
-    fraction_positive_triplets = num_positive_triplets / (num_valid_triplets + 1e-16)
+    valid_triplets_between = tf.to_float(tf.greater(triplet_loss_between, 1e-16))
+    num_positive_between = tf.reduce_sum(valid_triplets_between)
+    num_valid_between = tf.reduce_sum(mask_between)
+    fraction_positive_between = num_positive_between / (num_valid_between + 1e-16)
+
+    valid_triplets_within = tf.to_float(tf.greater(triplet_loss_within, 1e-16))
+    num_positive_within = tf.reduce_sum(valid_triplets_within)
+    num_valid_within = tf.reduce_sum(mask_within)
+    fraction_positive_within = num_positive_within / (num_valid_within + 1e-16)
 
     # Get final mean triplet loss over the positive valid triplets
-    triplet_loss = tf.reduce_sum(triplet_loss) / (num_positive_triplets + 1e-16)
+    triplet_loss_between = tf.reduce_sum(triplet_loss_between) / (num_positive_between + 1e-16)
+    triplet_loss_within = tf.reduce_sum(triplet_loss_within) / (num_positive_within + 1e-16)
 
-    return triplet_loss, fraction_positive_triplets
+    triplet_loss = triplet_loss_between + loss_ratio * triplet_loss_within
+
+    return triplet_loss, fraction_positive_between, fraction_positive_within
 
 
 def batch_hard_triplet_loss(labels, embeddings, margin, squared=False):
