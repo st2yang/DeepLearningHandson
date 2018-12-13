@@ -6,7 +6,7 @@ import os
 from collections import defaultdict
 
 
-def _parse_function(filename, label, size):
+def _parse_function(filename, label, time, size):
     """Obtain the image from the filename (for both training and validation).
 
     The following operations are applied:
@@ -23,10 +23,10 @@ def _parse_function(filename, label, size):
 
     resized_image = tf.image.resize_images(image, [size, size])
 
-    return resized_image, label
+    return resized_image, label, time
 
 
-def train_preprocess(image, label, use_random_flip):
+def train_preprocess(image, label, time, use_random_flip):
     """Image preprocessing for training.
 
     Apply the following operations:
@@ -42,10 +42,10 @@ def train_preprocess(image, label, use_random_flip):
     # Make sure the image is still in [0, 1]
     image = tf.clip_by_value(image, 0.0, 1.0)
 
-    return image, label
+    return image, label, time
 
 
-def input_fn(mode, filenames, labels, params):
+def input_fn(mode, filenames, labels, time, params):
     """Input function for the SIGNS dataset.
 
     The filenames have format "{label}_IMG_{id}.jpg".
@@ -60,15 +60,16 @@ def input_fn(mode, filenames, labels, params):
     """
     num_samples = len(filenames)
     assert len(filenames) == len(labels), "Filenames and labels should have same length"
+    assert len(labels) == len(time), "Labels and time should have same length"
 
     # Create a Dataset serving batches of images and labels
     # We don't repeat for multiple epochs because we always train and evaluate for one epoch
-    parse_fn = lambda f, l: _parse_function(f, l, params.image_size)
-    train_fn = lambda f, l: train_preprocess(f, l, params.use_random_flip)
+    parse_fn = lambda f, l, t: _parse_function(f, l, t, params.image_size)
+    train_fn = lambda f, l, t: train_preprocess(f, l, t, params.use_random_flip)
 
     if mode == 'train':
         params.train_size = num_samples
-        dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
+        dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels), tf.constant(time)))
             .shuffle(num_samples)  # whole dataset into the buffer ensures good shuffling
             .map(parse_fn, num_parallel_calls=params.num_parallel_calls)
             .map(train_fn, num_parallel_calls=params.num_parallel_calls)
@@ -77,13 +78,13 @@ def input_fn(mode, filenames, labels, params):
         )
     elif mode == 'eval':
         params.eval_size = num_samples
-        dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
+        dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels), tf.constant(time)))
             .map(parse_fn)
             .batch(params.batch_size)
             .prefetch(1)  # make sure you always have one batch ready to serve
         )
     elif mode == 'infer':
-        dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
+        dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels), tf.constant(time)))
             .map(parse_fn)
             .batch(num_samples)
         )
@@ -92,10 +93,10 @@ def input_fn(mode, filenames, labels, params):
 
     # Create reinitializable iterator from dataset
     iterator = dataset.make_initializable_iterator()
-    images, labels = iterator.get_next()
+    images, labels, time = iterator.get_next()
     iterator_init_op = iterator.initializer
 
-    inputs = {'images': images, 'labels': labels, 'iterator_init_op': iterator_init_op}
+    inputs = {'images': images, 'labels': labels, 'time': time, 'iterator_init_op': iterator_init_op}
     return inputs
 
 
@@ -136,4 +137,6 @@ def load_data(mode, data_dir, data_path, params):
     np.random.shuffle(zip_list)
     filenames, labels = zip(*zip_list)
 
-    return input_fn(mode, filenames, labels, params)
+    time = [f.split('/')[-1].partition('.')[0] for f in filenames]
+
+    return input_fn(mode, filenames, labels, time, params)
