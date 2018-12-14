@@ -19,15 +19,16 @@ class TripletNet:
         self.params = params
         images = inputs['images']
         labels = inputs['labels']
+        time = inputs['time']
         self.embeddings = self.base_net(images)
         self.embedding_mean_norm = tf.reduce_mean(tf.norm(self.embeddings, axis=1))
-        self.triplet_loss(labels)
+        self.triplet_loss(labels, time)
         self.intfs = {'input': images, 'output': self.embeddings}
 
-    def triplet_loss(self, labels):
+    def triplet_loss(self, labels, time):
         if self.params.triplet_strategy == "batch_all":
-            self.loss, self.fraction = batch_all_triplet_loss(labels, self.embeddings, margin=self.params.margin,
-                                                              squared=self.params.squared)
+            self.loss, self.fraction, _ = batch_all_triplet_loss(labels, time, self.embeddings, self.params.margin,
+                                                                 self.params.margin, 3, squared=self.params.squared)
         elif self.params.triplet_strategy == "batch_hard":
             self.loss = batch_hard_triplet_loss(labels, self.embeddings, margin=self.params.margin,
                                                 squared=self.params.squared)

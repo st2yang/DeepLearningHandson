@@ -137,6 +137,6 @@ def load_data(mode, data_dir, data_path, params):
     np.random.shuffle(zip_list)
     filenames, labels = zip(*zip_list)
 
-    time = [f.split('/')[-1].partition('.')[0] for f in filenames]
+    time = [int(f.split('/')[-1].partition('.')[0]) for f in filenames]
 
     return input_fn(mode, filenames, labels, time, params)

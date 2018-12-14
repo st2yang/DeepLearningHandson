@@ -1,6 +1,6 @@
 {
     "learning_rate": 1e-4,
-    "batch_size": 64,
+    "batch_size": 32,
     "tri_num_epochs": 20,
     "cls_num_epochs": 100,
 
@@ -9,7 +9,7 @@
     "bn_momentum": 0.9,
     "margin": 0.5,
     "embedding_size": 64,
-    "triplet_strategy": "batch_hard",
+    "triplet_strategy": "batch_all",
     "squared": false,
 
     "image_size": 64,
